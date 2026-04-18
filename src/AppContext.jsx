@@ -2,7 +2,8 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { io } from 'socket.io-client';
 
 const AppContext = createContext();
-const BACKEND_URL = 'http://localhost:5000';
+// Allow the application to switch dynamically between the live cloud server and local developer computer
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
 export const AppProvider = ({ children }) => {
   // Persistence Helper for current user across quick reloads
