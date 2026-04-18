@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | SkillSwap</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        window.CURRENT_USER_NAME = "{{ current_user.name }}";
+        window.CURRENT_USER_ID = "{{ current_user.id }}";
+    </script>
+</head>
+<body class="dashboard-page">
+    <header>
+        <div class="container nav-bar">
+            <h1>Skill<span>Swap</span></h1>
+            <div class="user-info">
+                <button class="btn-ai" onclick="openChat('ai_mentor', 'SkillSwap AI')">✨ Ask AI Mentor</button>
+                <span>Welcome, <strong>{{ current_user.name }}</strong></span>
+                <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Search Section -->
+        <section class="search-section card" style="margin-top: 40px; margin-bottom: 32px;">
+            <form action="{{ url_for('dashboard') }}" method="GET" class="search-form">
+                <input type="text" name="q" value="{{ query or '' }}" placeholder="What skill do you need to learn? (e.g. Photoshop)" class="search-input">
+                <button type="submit" class="btn-primary" style="width: auto; padding: 0 30px;">Search</button>
+            </form>
+        </section>
+
+        {% if query %}
+        <section class="card" style="margin-bottom: 32px;">
+            <h2>Search Results for "{{ query }}"</h2>
+            <div class="matches-list">
+                {% if search_results %}
+                    {% for res in search_results %}
+                    <div class="match-item">
+                        <div class="match-info">
+                            <h3>{{ res.name }}</h3>
+                            <p><strong>Teaches:</strong> {{ res.skills_have|join(', ') }}</p>
+                        </div>
+                        <button class="btn-chat" onclick="openChat('{{ res._id }}', '{{ res.name }}')">Chat</button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <p style="font-size: 1.2rem; color: #fca5a5;">⚠️ No results found for "<strong>{{ query }}</strong>"</p>
+                        <p>Try searching for broader terms like "Python", "Design", or "Marketing".</p>
+                    </div>
+                {% endif %}
+            </div>
+            <a href="{{ url_for('dashboard') }}" style="color: var(--primary); text-decoration: none; font-size: 0.9rem;">Clear Search</a>
+        </section>
+        {% endif %}
+
+        <div class="dashboard-grid" style="padding-top: 0;">
+            <!-- Phase 3: Profile Management -->
+            <section class="card profile-card">
+                <h2>My Skills</h2>
+                <form action="{{ url_for('update_skills') }}" method="POST">
+                    <div class="form-group">
+                        <label>Skills I Have (comma separated)</label>
+                        <input type="text" name="skills_have" value="{{ current_user.skills_have|join(', ') }}" placeholder="e.g. Python, Guitar, Design">
+                    </div>
+                    <div class="form-group">
+                        <label>Skills I Want (comma separated)</label>
+                        <input type="text" name="skills_want" value="{{ current_user.skills_want|join(', ') }}" placeholder="e.g. React, Spanish, Cooking">
+                    </div>
+                    <button type="submit" class="btn-primary">Update Profile</button>
+                </form>
+            </section>
+
+            <!-- Phase 4: Matching System -->
+            <section class="card matches-card">
+                <h2>Potential Matches 🔥</h2>
+                <div class="matches-list">
+                    {% if matches %}
+                        {% for match in matches %}
+                        <div class="match-item">
+                            <div class="match-info">
+                                <h3>{{ match.name }}</h3>
+                                <p><strong>Has:</strong> {{ match.skills_have|join(', ') }}</p>
+                                <p><strong>Wants:</strong> {{ match.skills_want|join(', ') }}</p>
+                            </div>
+                            <button class="btn-chat" onclick="openChat('{{ match._id }}', '{{ match.name }}')">Chat</button>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="empty-state">No direct matches yet. Try adding more skills or check back later!</p>
+                    {% endif %}
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Phase 6: Real-time Chat Modal -->
+    <div id="chat-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="chat-with-name">Chat</h3>
+                <span class="close" onclick="closeChat()">&times;</span>
+            </div>
+            <div id="chat-messages" class="chat-messages"></div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Type a message...">
+                <button onclick="sendMessage()" class="btn-send">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

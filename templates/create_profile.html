@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Profile | SkillSwap</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-page">
+    <div class="auth-card" style="max-width: 500px;">
+        <h1>Complete Your <span>Profile</span></h1>
+        <p>Tell the community what you can teach and what you're looking to learn.</p>
+
+        <form action="{{ url_for('create_profile') }}" method="POST" style="margin-top: 24px;">
+            <div class="form-group">
+                <label>Skills I can Teach (Expertise)</label>
+                <input type="text" name="skills_have" required placeholder="e.g. Python, UI Design, Cooking">
+                <small style="color: var(--text-muted); display: block; margin-top: 4px; font-size: 0.75rem;">Separate skills with commas</small>
+            </div>
+            <div class="form-group">
+                <label>Skills I want to Learn</label>
+                <input type="text" name="skills_want" required placeholder="e.g. Guitar, French, Marketing">
+                <small style="color: var(--text-muted); display: block; margin-top: 4px; font-size: 0.75rem;">Separate skills with commas</small>
+            </div>
+            <button type="submit" class="btn-primary" style="margin-top: 10px;">Finish Setup</button>
+        </form>
+    </div>
+</body>
+</html>
