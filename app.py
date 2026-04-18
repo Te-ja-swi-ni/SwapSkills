@@ -27,40 +27,69 @@ try:
     client.server_info() # trigger exception if cannot connect
     db = client['skill_swap_db']
 except:
-    # Fallback to local dictionary mock for demo stability if mongo is missing
-    print("WARNING: MongoDB not found. Using in-memory mock for demonstration.")
-    class MockDB:
-        def __init__(self):
-            self.users = []
-            self.requests = []
-            self.messages = []
-        
-        @property
-        def users_col(self): return self
-        @property
-        def requests_col(self): return self
-        @property
-        def messages_col(self): return self
+    print("WARNING: MongoDB not found. Using JSON file storage for deployment compatibility.")
+    import json, os, uuid
+    
+    class JsonCollection:
+        def __init__(self, db, name):
+            self.db = db
+            self.name = name
+
+        def _match(self, doc, query):
+            for k, v in query.items():
+                if k == '_id':
+                    if str(doc.get('_id')) != str(v): return False
+                elif doc.get(k) != v: return False
+            return True
 
         def find_one(self, query):
-            for u in self.users:
-                if all(u.get(k) == v for k, v in query.items()): return u
+            for doc in self.db.data.get(self.name, []):
+                if self._match(doc, query): return doc
             return None
-        
-        def find(self, query={}):
-            return [u for u in self.users if all(u.get(k) == v for k, v in query.items())]
 
-        def insert_one(self, data):
-            if not data.get('_id'): data['_id'] = ObjectId()
-            self.users.append(data)
-            return data
+        def find(self, query={}):
+            if not query: return self.db.data.get(self.name, [])
+            return [doc for doc in self.db.data.get(self.name, []) if self._match(doc, query)]
+
+        def insert_one(self, doc):
+            if '_id' not in doc:
+                doc['_id'] = str(uuid.uuid4())
+            elif hasattr(doc['_id'], '__str__'):
+                doc['_id'] = str(doc['_id'])
+            self.db.data.setdefault(self.name, []).append(doc)
+            self.db.save()
+            class InsertResult:
+                def __init__(self, id): self.inserted_id = id
+            return InsertResult(doc['_id'])
 
         def update_one(self, query, update):
-            u = self.find_one(query)
-            if u: u.update(update.get('$set', {}))
+            doc = self.find_one(query)
+            if doc:
+                doc.update(update.get('$set', {}))
+                self.db.save()
 
-    mock_db = MockDB()
-    db = type('DB', (), {'users': mock_db, 'requests': mock_db, 'messages': mock_db})
+    class JsonDB:
+        def __init__(self, filepath='data.json'):
+            self.filepath = filepath
+            self.data = {'users': [], 'messages': [], 'requests': []}
+            if os.path.exists(self.filepath):
+                try:
+                    with open(self.filepath, 'r') as f:
+                        self.data = json.load(f)
+                except: pass
+        
+        def save(self):
+            with open(self.filepath, 'w') as f:
+                json.dump(self.data, f, indent=2)
+
+        @property
+        def users(self): return JsonCollection(self, 'users')
+        @property
+        def messages(self): return JsonCollection(self, 'messages')
+        @property
+        def requests(self): return JsonCollection(self, 'requests')
+
+    db = JsonDB()
 
 # --- Auth Setup ---
 login_manager = LoginManager()
